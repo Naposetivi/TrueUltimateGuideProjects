@@ -11,8 +11,8 @@ namespace Entities
         {
         }
 
-        public DbSet<Country> Countries { get; set; }
-        public DbSet<Person> Persons { get; set; }
+        public virtual DbSet<Country> Countries { get; set; }
+        public virtual DbSet<Person> Persons { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -53,8 +53,8 @@ namespace Entities
             modelBuilder.Entity<Person>(entity =>
             {
                 entity.HasOne<Country>(c => c.Country)
-                .WithMany(p => p.Persons)
-                .HasForeignKey(p => p.CountryID);
+                   .WithMany(p => p.Persons)
+                   .HasForeignKey(p => p.CountryID);
             });
         }
 

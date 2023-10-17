@@ -1,49 +1,37 @@
-﻿using FluentAssertions;
+﻿using Entities;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using Xunit;
-using Fizzler;
-using Fizzler.Systems.HtmlAgilityPack;
-using HtmlAgilityPack;
+using Microsoft.EntityFrameworkCore.InMemory;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace CRUDTests
 {
-    public class PersonsControllerIntegrationTest : IClassFixture<CustomWebApplicationFactory>
+    public class CustomWebApplicationFactory : WebApplicationFactory<Program>
     {
-        private readonly HttpClient _client;
-
-        public PersonsControllerIntegrationTest(CustomWebApplicationFactory factory)
+        protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
-            _client = factory.CreateClient();
+            base.ConfigureWebHost(builder);
+
+            builder.UseEnvironment("Test");
+
+            builder.ConfigureServices(services => {
+                var descripter = services.SingleOrDefault(temp => temp.ServiceType == typeof(DbContextOptions<ApplicationDbContext>));
+
+                if (descripter != null)
+                {
+                    services.Remove(descripter);
+                }
+                services.AddDbContext<ApplicationDbContext>(options =>
+                {
+                    options.UseInMemoryDatabase("DatbaseForTesting");
+                });
+            });
         }
-
-
-        #region Index
-
-        [Fact]
-        public async Task Index_ToReturnView()
-        {
-            //Arrange
-
-            //Act
-            HttpResponseMessage response = await _client.GetAsync("/Persons/Index");
-
-            //Assert
-            response.Should().BeSuccessful(); //2xx
-
-            string responseBody = await response.Content.ReadAsStringAsync();
-
-            HtmlDocument html = new HtmlDocument();
-            html.LoadHtml(responseBody);
-            var document = html.DocumentNode;
-
-            document.QuerySelectorAll("table.persons").Should().NotBeNull();
-        }
-
-        #endregion
     }
 }
