@@ -1,5 +1,10 @@
-﻿using CRUDExample.Filters.ActionFilters;
+﻿using ContactsManager.Core.Domain.IdentityEntities;
+using CRUDExample.Filters.ActionFilters;
 using Entities;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Repositories;
 using RepositoryContracts;
@@ -26,7 +31,10 @@ namespace CRUDExample
                     Value = "My-Value-From-Global",
                     Order = 2
                 });
+
+                options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
             });
+
 
             //add services into IoC container
             services.AddScoped<ICountriesRepository, CountriesRepository>();
@@ -43,13 +51,48 @@ namespace CRUDExample
             services.AddScoped<IPersonsDeleterService, PersonsDeleterService>();
             services.AddScoped<IPersonsUpdaterService, PersonsUpdaterService>();
             services.AddScoped<IPersonsSorterService, PersonsSorterService>();
+            services.AddTransient<PersonsListActionFilter>();
 
             services.AddDbContext<ApplicationDbContext>(options =>
             {
                 options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
             });
 
-            services.AddTransient<PersonsListActionFilter>();
+
+            //Enable Identity in this project
+            services.AddIdentity<ApplicationUser, ApplicationRole>(options => {
+                options.Password.RequiredLength = 5;
+                options.Password.RequireNonAlphanumeric = false;
+                options.Password.RequireUppercase = false;
+                options.Password.RequireLowercase = true;
+                options.Password.RequireDigit = false;
+                options.Password.RequiredUniqueChars = 3; //Eg: AB12AB (unique characters are A,B,1,2)
+            })
+             .AddEntityFrameworkStores<ApplicationDbContext>()
+
+             .AddDefaultTokenProviders()
+
+             .AddUserStore<UserStore<ApplicationUser, ApplicationRole, ApplicationDbContext, Guid>>()
+
+             .AddRoleStore<RoleStore<ApplicationRole, ApplicationDbContext, Guid>>();
+
+
+            services.AddAuthorization(options =>
+            {
+                options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build(); //enforces authoriation policy (user must be authenticated) for all the action methods
+
+                options.AddPolicy("NotAuthorized", policy =>
+                {
+                    policy.RequireAssertion(context =>
+                    {
+                        return !context.User.Identity.IsAuthenticated;
+                    });
+                });
+            });
+
+            services.ConfigureApplicationCookie(options => {
+                options.LoginPath = "/Account/Login";
+            });
 
             services.AddHttpLogging(options =>
             {

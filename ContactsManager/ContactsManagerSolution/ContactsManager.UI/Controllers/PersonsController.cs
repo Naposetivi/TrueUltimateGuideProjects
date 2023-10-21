@@ -1,7 +1,6 @@
 ﻿using CRUDExample.Filters;
 using CRUDExample.Filters.ActionFilters;
 using CRUDExample.Filters.AuthorizationFilter;
-using CRUDExample.Filters.ExceptionFilters;
 using CRUDExample.Filters.ResourceFilters;
 using CRUDExample.Filters.ResultFilters;
 using Microsoft.AspNetCore.Mvc;
